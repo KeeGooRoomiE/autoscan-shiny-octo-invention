@@ -160,14 +160,39 @@ async function downloadDoc() {
     if (pj !== -1) xml = xml.slice(0, pj) + lt + xml.slice(pj + ct.length);
     xml = xml.replace(/>PASSWORD<\/w:t>/, '>' + escapeXml(pass) + '<\/w:t>');
 
-    zip.file('word/document.xml', xml);
+    // Re-register every file with its original compression type
+    // Images (jpeg/jpg/png) → STORE (compress=0), everything else → DEFLATE
+    // This prevents JSZip from recompressing images which breaks Word
+    const allFiles = [];
+    zip.forEach((relativePath, file) => {
+      allFiles.push({ path: relativePath, file });
+    });
 
-    // Generate with DEFLATE — same compression as original
+    for (const { path, file } of allFiles) {
+      if (path === 'word/document.xml') continue; // already patched below
+      if (path.endsWith('/') || path === 'word/') continue; // skip dir entries
+
+      const isImage = /\.(jpg|jpeg|png|gif|bmp|tiff|emf|wmf)$/i.test(path);
+      const data = await file.async('arraybuffer');
+      zip.file(path, data, {
+        compression: isImage ? 'STORE' : 'DEFLATE',
+        compressionOptions: isImage ? {} : { level: 6 },
+        date: file.date,
+      });
+    }
+
+    // Patch and re-register document.xml
+    zip.file('word/document.xml', xml, {
+      compression: 'DEFLATE',
+      compressionOptions: { level: 6 }
+    });
+
+    // Remove spurious empty directory entries Word doesn't like
+    try { zip.remove('word/'); } catch(e) {}
+
     const blob = await zip.generateAsync({
       type: 'blob',
       mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      compression: 'DEFLATE',
-      compressionOptions: { level: 6 }
     });
 
     const url = URL.createObjectURL(blob);
