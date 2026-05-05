@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Памятка пользователю</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;600;700&display=swap');
+:root{--blue:#1a56a0;--border:#d0dcea;--muted:#6b7f9a;--text:#1a2a4a;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Golos Text',sans-serif;background:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:stretch;}
+
+.site-header{display:flex;justify-content:flex-start;}
+.site-header img{width:1024px;max-width:100%;display:block;}
+.site-footer{display:flex;justify-content:flex-end;}
+.site-footer img{width:1024px;max-width:100%;display:block;}
+
+.main{flex:1;display:flex;flex-direction:column;align-items:center;padding:40px 32px 48px;gap:24px;}
+
+.panel-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1.4px;margin-bottom:16px;}
+.form-block{width:100%;max-width:480px;display:flex;flex-direction:column;}
+.field-label{font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px;}
+.field-input{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:15px;color:var(--text);outline:none;transition:border-color .18s,box-shadow .18s;background:#fafcff;margin-bottom:16px;}
+.field-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,86,160,.10);background:#fff;}
+.field-input::placeholder{color:#b0bfcc;}
+
+.divider{height:1px;background:var(--border);width:100%;max-width:480px;}
+
+.section-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:12px;}
+.system-btns{display:flex;flex-direction:column;gap:8px;width:100%;max-width:480px;}
+
+.radio-btn{display:flex;align-items:center;gap:12px;width:100%;padding:12px 16px;border-radius:8px;border:2px solid #e0e6ee;background:#f6f8fa;cursor:pointer;transition:all .18s;user-select:none;}
+.radio-btn input[type=radio]{position:absolute;opacity:0;width:0;height:0;}
+.radio-circle{width:18px;height:18px;border-radius:50%;border:2px solid #c0ccd8;background:#fff;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:border-color .18s,background .18s;}
+.radio-circle::after{content:'';width:8px;height:8px;border-radius:50%;background:#fff;opacity:0;transition:opacity .18s;}
+.btn-label{font-size:14px;font-weight:700;letter-spacing:.6px;color:#b0bec5;transition:color .18s;}
+.radio-btn.checked{border-color:var(--blue);background:#fff;box-shadow:0 4px 14px rgba(26,86,160,.15);}
+.radio-btn.checked .radio-circle{border-color:var(--blue);background:var(--blue);}
+.radio-btn.checked .radio-circle::after{opacity:1;}
+.radio-btn.checked .btn-label{color:var(--text);}
+
+.status-msg{font-size:12px;color:#e74c3c;min-height:16px;text-align:center;}
+
+.btn-download{width:100%;max-width:480px;padding:13px;background:#1e9e52;color:#fff;border:none;border-radius:9px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:.4px;display:none;transition:background .18s,transform .1s;box-shadow:0 4px 16px rgba(30,158,82,.22);}
+.btn-download.visible{display:block;}
+.btn-download:hover{background:#178a46;}
+.btn-download:active{transform:scale(.98);}
+.btn-download:disabled{background:#8abf9e;cursor:not-allowed;transform:none;}
+</style>
+</head>
+<body>
+
+<div class="site-header"><img src="header.jpg" alt="АвтоСкан"></div>
+
+<div class="main">
+  <div class="form-block">
+    <div class="panel-title">Данные пользователя</div>
+    <div class="field-label">Логин</div>
+    <input class="field-input" id="userField" type="text" placeholder="Введите логин" oninput="update()">
+    <div class="field-label">Пароль</div>
+    <input class="field-input" id="passField" type="text" placeholder="Введите пароль" oninput="update()">
+  </div>
+
+  <div class="divider"></div>
+
+  <div style="width:100%;max-width:480px;">
+    <div class="section-label">Система мониторинга</div>
+    <div class="system-btns">
+      <label class="radio-btn" id="rb-axenta" onclick="selectSystem('axenta')">
+        <input type="radio" name="system" value="axenta">
+        <span class="radio-circle"></span>
+        <span class="btn-label">АКСЕНТА</span>
+      </label>
+      <label class="radio-btn" id="rb-glonass" onclick="selectSystem('glonass')">
+        <input type="radio" name="system" value="glonass">
+        <span class="radio-circle"></span>
+        <span class="btn-label">ГЛОНАСССОФТ</span>
+      </label>
+      <label class="radio-btn" id="rb-wialon" onclick="selectSystem('wialon')">
+        <input type="radio" name="system" value="wialon">
+        <span class="radio-circle"></span>
+        <span class="btn-label">WIALON LOCAL</span>
+      </label>
+    </div>
+  </div>
+
+  <div class="status-msg" id="statusMsg"></div>
+  <button class="btn-download" id="btnDownload" onclick="downloadDoc()">Скачать документ</button>
+</div>
+
+<div class="site-footer"><img src="footer.jpg" alt="АвтоСкан"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+const DOCS = {
+  axenta:  { path: 'docs/axenta.docx',  filename: 'Памятка_Аксента.docx' },
+  glonass: { path: 'docs/glonass.docx', filename: 'Памятка_ГлонасСофт.docx' },
+  wialon:  { path: 'docs/wialon.docx',  filename: 'Памятка_Wialon_Local.docx' },
+};
+
+let currentSystem = null;
+
+function selectSystem(key) {
+  currentSystem = key;
+  document.querySelectorAll('.radio-btn').forEach(el => el.classList.remove('checked'));
+  document.getElementById('rb-' + key).classList.add('checked');
+  update();
+}
+
+function escapeXml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function update() {
+  const user = document.getElementById('userField').value.trim();
+  const pass = document.getElementById('passField').value.trim();
+  const ok = user && pass && currentSystem;
+  let msg = '';
+  if (user || pass || currentSystem) {
+    if (!currentSystem) msg = 'Выберите систему мониторинга';
+    else if (!user || !pass) msg = 'Заполните оба поля';
+  }
+  document.getElementById('statusMsg').textContent = msg;
+  document.getElementById('btnDownload').classList.toggle('visible', !!ok);
+}
+
+async function downloadDoc() {
+  const user = document.getElementById('userField').value.trim();
+  const pass = document.getElementById('passField').value.trim();
+  if (!user || !pass || !currentSystem) return;
+
+  const btn = document.getElementById('btnDownload');
+  btn.textContent = 'Формирую...';
+  btn.disabled = true;
+
+  try {
+    const doc = DOCS[currentSystem];
+
+    // Fetch original file as arraybuffer — images stay intact
+    const resp = await fetch(doc.path);
+    if (!resp.ok) throw new Error('Не удалось загрузить файл: ' + doc.path);
+    const arrayBuf = await resp.arrayBuffer();
+
+    const zip = await JSZip.loadAsync(arrayBuf);
+    let xml = await zip.file('word/document.xml').async('string');
+
+    // Replace ИМЯ ПОЛЬЗОВАТЕЛЯ -> ЛОГИН
+    xml = xml.replace(/ИМЯ ПОЛЬЗОВАТЕЛЯ/g, 'ЛОГИН');
+
+    // Fix alignment center -> left for USER and PASSWORD cells, then substitute values
+    const ct = '<w:jc w:val="center"/>';
+    const lt = '<w:jc w:val="left"/>';
+
+    let ui = xml.indexOf('>USER</w:t>');
+    let uj = xml.lastIndexOf(ct, ui);
+    if (uj !== -1) xml = xml.slice(0, uj) + lt + xml.slice(uj + ct.length);
+    xml = xml.replace(/>USER<\/w:t>/, '>' + escapeXml(user) + '<\/w:t>');
+
+    let pi = xml.indexOf('>PASSWORD</w:t>');
+    let pj = xml.lastIndexOf(ct, pi);
+    if (pj !== -1) xml = xml.slice(0, pj) + lt + xml.slice(pj + ct.length);
+    xml = xml.replace(/>PASSWORD<\/w:t>/, '>' + escapeXml(pass) + '<\/w:t>');
+
+    zip.file('word/document.xml', xml);
+
+    // Generate with DEFLATE — same compression as original
+    const blob = await zip.generateAsync({
+      type: 'blob',
+      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      compression: 'DEFLATE',
+      compressionOptions: { level: 6 }
+    });
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = doc.filename;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    btn.textContent = 'Готово ✓';
+    setTimeout(() => { btn.textContent = 'Скачать документ'; btn.disabled = false; }, 2000);
+  } catch (e) {
+    alert('Ошибка: ' + e.message);
+    btn.textContent = 'Скачать документ';
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
