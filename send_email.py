@@ -36,28 +36,50 @@ pdf_path, doc_basename = DOCS[system]
 system_name  = SYSTEM_NAMES[system]
 pdf_filename = f'Памятка_{system_name}_{doc_login}.pdf'
 
-# ── Overlay: erase USER/PASSWORD, draw new values ────────────────────────────
+# ── PDF overlay ───────────────────────────────────────────────────────────────
 pdfmetrics.registerFont(TTFont(
     'ArialBold',
     '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf'
 ))
 
-BG = (0.773, 0.851, 0.941)  # #C5D9F0 — cell background
+BG         = (0.773, 0.851, 0.941)  # #C5D9F0
+CELL_LEFT  = 190.9
+CELL_RIGHT = 574.6
+PADDING    = 8
+TEXT_X     = CELL_LEFT + PADDING
+MAX_W      = CELL_RIGHT - TEXT_X - PADDING
+
+# Cell inner bounds from PDF stream
+USER_CELL_Y = 494.0
+USER_CELL_H = 28.0
+PASS_CELL_Y = 454.5
+PASS_CELL_H = 29.5
+
+def fit_font_size(text, sizes=(18, 14, 11, 9)):
+    for sz in sizes:
+        if pdfmetrics.stringWidth(text, 'ArialBold', sz) <= MAX_W:
+            return sz
+    return sizes[-1]
 
 def make_overlay(pw, ph, login, password):
     buf = io.BytesIO()
     c = canvas.Canvas(buf, pagesize=(pw, ph))
 
-    # Erase old values with background color rects (exact cell inner bounds)
+    # Erase old values
     c.setFillColorRGB(*BG)
-    c.rect(191.9, 494.0, 381.7, 28.0, fill=1, stroke=0)  # USER row
-    c.rect(191.9, 454.5, 381.7, 29.5, fill=1, stroke=0)  # PASSWORD row
+    c.rect(CELL_LEFT, USER_CELL_Y, CELL_RIGHT - CELL_LEFT, USER_CELL_H, fill=1, stroke=0)
+    c.rect(CELL_LEFT, PASS_CELL_Y, CELL_RIGHT - CELL_LEFT, PASS_CELL_H, fill=1, stroke=0)
 
-    # Draw new values
+    # Draw login — left-aligned, vertically centered in cell
     c.setFillColorRGB(0, 0, 0)
-    c.setFont('ArialBold', 18)
-    c.drawString(364.7, 498.4, login)
-    c.drawString(340.5, 458.8, password)
+    sz = fit_font_size(login)
+    c.setFont('ArialBold', sz)
+    c.drawString(TEXT_X, USER_CELL_Y + USER_CELL_H / 2 - sz * 0.3, login)
+
+    # Draw password
+    sz = fit_font_size(password)
+    c.setFont('ArialBold', sz)
+    c.drawString(TEXT_X, PASS_CELL_Y + PASS_CELL_H / 2 - sz * 0.3, password)
 
     c.save()
     buf.seek(0)
@@ -68,8 +90,7 @@ writer = PdfWriter()
 page   = reader.pages[0]
 pw, ph = float(page.mediabox.width), float(page.mediabox.height)
 
-overlay_pdf = PdfReader(make_overlay(pw, ph, doc_login, doc_password))
-page.merge_page(overlay_pdf.pages[0])
+page.merge_page(PdfReader(make_overlay(pw, ph, doc_login, doc_password)).pages[0])
 writer.add_page(page)
 
 pdf_buf = io.BytesIO()
