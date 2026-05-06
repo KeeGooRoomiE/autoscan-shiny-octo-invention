@@ -26,6 +26,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Inject dispatch token into index.html
+        run: |
+          sed -i "s/YOUR_FINE_GRAINED_PAT_HERE/${{ secrets.GH_DISPATCH_TOKEN }}/" index.html
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
