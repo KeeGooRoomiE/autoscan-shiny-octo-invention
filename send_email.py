@@ -36,48 +36,86 @@ pdf_path, doc_basename = DOCS[system]
 system_name  = SYSTEM_NAMES[system]
 pdf_filename = f'Памятка_{system_name}_{doc_login}.pdf'
 
-# ── PDF overlay ───────────────────────────────────────────────────────────────
+# ── Fonts ─────────────────────────────────────────────────────────────────────
 pdfmetrics.registerFont(TTFont(
     'ArialBold',
     '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf'
 ))
 
-BG         = (0.773, 0.851, 0.941)  # #C5D9F0
-CELL_LEFT  = 190.9
-CELL_RIGHT = 574.6
-PADDING    = 8
-TEXT_X     = CELL_LEFT + PADDING
-MAX_W      = CELL_RIGHT - TEXT_X - PADDING
-
-# Cell inner bounds from PDF stream
-USER_CELL_Y = 494.0
-USER_CELL_H = 28.0
-PASS_CELL_Y = 454.5
-PASS_CELL_H = 29.5
-
-def fit_font_size(text, sizes=(18, 14, 11, 9)):
+def fit_size(text, max_w, sizes):
     for sz in sizes:
-        if pdfmetrics.stringWidth(text, 'ArialBold', sz) <= MAX_W:
+        if pdfmetrics.stringWidth(text, 'ArialBold', sz) <= max_w:
             return sz
     return sizes[-1]
 
-def make_overlay(pw, ph, login, password):
+# ── Overlay: Аксента (новый макет) ───────────────────────────────────────────
+# Two side-by-side rounded boxes
+# USER box: x=64  y=392 w=234.72 h=42  text x=78
+# PASS box: x=312.72 y=392 w=234.72 h=42  text x=326.72
+# Corner radius ~4.5pt → inset 6pt to avoid clipping
+# BG: rgb(239,246,254)  Text: rgb(0.043,0.180,0.369)
+
+def make_overlay_axenta(pw, ph, login, password):
+    BG   = (239/255, 246/255, 254/255)
+    FG   = (0.043, 0.180, 0.369)
+    INSET = 6.0
+    PAD_R = 10.0
+
+    USER_X = 64.0;    USER_W = 234.72; TXT_USER_X = 78.0
+    PASS_X = 312.72;  PASS_W = 234.72; TXT_PASS_X = 326.72
+    CELL_Y = 392.0;   CELL_H = 42.0
+
     buf = io.BytesIO()
     c = canvas.Canvas(buf, pagesize=(pw, ph))
 
-    # Erase old values
+    c.setFillColorRGB(*BG)
+    c.rect(USER_X + INSET, CELL_Y + INSET, USER_W - INSET*2, CELL_H - INSET*2, fill=1, stroke=0)
+    c.rect(PASS_X + INSET, CELL_Y + INSET, PASS_W - INSET*2, CELL_H - INSET*2, fill=1, stroke=0)
+
+    c.setFillColorRGB(*FG)
+
+    sz = fit_size(login, USER_W - (TXT_USER_X - USER_X) - PAD_R, (16, 13, 10, 8))
+    c.setFont('ArialBold', sz)
+    c.drawString(TXT_USER_X, CELL_Y + CELL_H / 2 - sz * 0.3, login)
+
+    sz = fit_size(password, PASS_W - (TXT_PASS_X - PASS_X) - PAD_R, (16, 13, 10, 8))
+    c.setFont('ArialBold', sz)
+    c.drawString(TXT_PASS_X, CELL_Y + CELL_H / 2 - sz * 0.3, password)
+
+    c.save()
+    buf.seek(0)
+    return buf
+
+# ── Overlay: Глонасс / Wialon (старый макет) ─────────────────────────────────
+# Single wide table, two rows
+# Right cell: x=190.9 y=485.7/444.8 w=383.7 h=37.7/40.3
+# BG: rgb(197,217,240)  Text: black
+
+def make_overlay_classic(pw, ph, login, password):
+    BG  = (0.773, 0.851, 0.941)  # #C5D9F0
+    FG  = (0, 0, 0)
+    CELL_LEFT  = 190.9
+    CELL_RIGHT = 574.6
+    TEXT_X     = CELL_LEFT + 8
+    MAX_W      = CELL_RIGHT - TEXT_X - 8
+
+    USER_CELL_Y = 494.0;  USER_CELL_H = 28.0
+    PASS_CELL_Y = 454.5;  PASS_CELL_H = 29.5
+
+    buf = io.BytesIO()
+    c = canvas.Canvas(buf, pagesize=(pw, ph))
+
     c.setFillColorRGB(*BG)
     c.rect(CELL_LEFT, USER_CELL_Y, CELL_RIGHT - CELL_LEFT, USER_CELL_H, fill=1, stroke=0)
     c.rect(CELL_LEFT, PASS_CELL_Y, CELL_RIGHT - CELL_LEFT, PASS_CELL_H, fill=1, stroke=0)
 
-    # Draw login — left-aligned, vertically centered in cell
-    c.setFillColorRGB(0, 0, 0)
-    sz = fit_font_size(login)
+    c.setFillColorRGB(*FG)
+
+    sz = fit_size(login, MAX_W, (18, 14, 11, 9))
     c.setFont('ArialBold', sz)
     c.drawString(TEXT_X, USER_CELL_Y + USER_CELL_H / 2 - sz * 0.3, login)
 
-    # Draw password
-    sz = fit_font_size(password)
+    sz = fit_size(password, MAX_W, (18, 14, 11, 9))
     c.setFont('ArialBold', sz)
     c.drawString(TEXT_X, PASS_CELL_Y + PASS_CELL_H / 2 - sz * 0.3, password)
 
@@ -85,12 +123,18 @@ def make_overlay(pw, ph, login, password):
     buf.seek(0)
     return buf
 
+# ── Apply overlay ─────────────────────────────────────────────────────────────
 reader = PdfReader(pdf_path)
 writer = PdfWriter()
 page   = reader.pages[0]
 pw, ph = float(page.mediabox.width), float(page.mediabox.height)
 
-page.merge_page(PdfReader(make_overlay(pw, ph, doc_login, doc_password)).pages[0])
+if system == 'axenta':
+    overlay_buf = make_overlay_axenta(pw, ph, doc_login, doc_password)
+else:
+    overlay_buf = make_overlay_classic(pw, ph, doc_login, doc_password)
+
+page.merge_page(PdfReader(overlay_buf).pages[0])
 writer.add_page(page)
 
 pdf_buf = io.BytesIO()
