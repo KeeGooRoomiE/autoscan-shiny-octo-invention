@@ -5,6 +5,8 @@ import zipfile
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email.mime.text import MIMEText
+from email.header import Header
+from email.utils import formataddr
 from email import encoders
 
 # ── Inputs from workflow ──────────────────────────────────────────────────────
@@ -81,10 +83,13 @@ with zipfile.ZipFile(io.BytesIO(original), 'r') as zin:
 doc_bytes = out_buf.getvalue()
 
 # ── Compose email ─────────────────────────────────────────────────────────────
+from email.header import Header
+from email.utils import formataddr
+
 msg = MIMEMultipart()
-msg['From']    = f'{sender_name} <{sender_email}>'
+msg['From']    = formataddr((str(Header(sender_name, 'utf-8')), sender_email))
 msg['To']      = recipient
-msg['Subject'] = f'Памятка пользователя — {system_name}'
+msg['Subject'] = Header(f'Памятка пользователя — {system_name}', 'utf-8')
 
 body = f"""Здравствуйте!
 
@@ -104,13 +109,14 @@ msg.attach(MIMEText(body, 'plain', 'utf-8'))
 attachment = MIMEBase('application', 'vnd.openxmlformats-officedocument.wordprocessingml.document')
 attachment.set_payload(doc_bytes)
 encoders.encode_base64(attachment)
-attachment.add_header('Content-Disposition', 'attachment', filename=doc_filename)
+attachment.add_header('Content-Disposition', 'attachment',
+                      filename=('utf-8', '', doc_filename))
 msg.attach(attachment)
 
 # ── Send via Mail.ru SMTP ─────────────────────────────────────────────────────
 print(f'Sending from {sender_email} to {recipient} ...')
 with smtplib.SMTP_SSL('smtp.mail.ru', 465) as smtp:
     smtp.login(sender_email, sender_pass)
-    smtp.sendmail(sender_email, recipient, msg.as_bytes())
+    smtp.sendmail(sender_email, recipient, msg.as_string().encode('utf-8'))
 
 print('Done.')
