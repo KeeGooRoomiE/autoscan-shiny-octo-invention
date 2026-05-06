@@ -1,4 +1,4 @@
-name: Send Email
+name: Send Pamyatka Email
 
 on:
   workflow_dispatch:
@@ -27,28 +27,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install LibreOffice and fonts
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends \
-            libreoffice \
-            fonts-urw-base35 \
-            ttf-mscorefonts-installer \
-            fontconfig
-          sudo fc-cache -fv
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      - name: Build and send PDF
+      - name: Install dependencies
+        run: pip install pypdf reportlab
+
+      - name: Send PDF
         env:
-          RECIPIENT:     ${{ github.event.inputs.recipient }}
-          MANAGER_NAME:  ${{ github.event.inputs.manager_name }}
-          SYSTEM:        ${{ github.event.inputs.system }}
-          DOC_LOGIN:     ${{ github.event.inputs.login }}
-          DOC_PASSWORD:  ${{ github.event.inputs.password }}
-          SENDER_EMAIL:  ${{ secrets.MANAGER1_EMAIL }}
-          SENDER_PASS:   ${{ secrets.MANAGER1_PASS }}
+          RECIPIENT:    ${{ github.event.inputs.recipient }}
+          MANAGER_NAME: ${{ github.event.inputs.manager_name }}
+          SYSTEM:       ${{ github.event.inputs.system }}
+          DOC_LOGIN:    ${{ github.event.inputs.login }}
+          DOC_PASSWORD: ${{ github.event.inputs.password }}
+          SENDER_EMAIL: ${{ secrets.MANAGER1_EMAIL }}
+          SENDER_PASS:  ${{ secrets.MANAGER1_PASS }}
         run: python send_email.py

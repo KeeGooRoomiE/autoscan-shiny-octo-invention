@@ -1,10 +1,10 @@
 import os
 import io
 import smtplib
-import zipfile
-import subprocess
-import tempfile
-import re
+from pypdf import PdfReader, PdfWriter
+from reportlab.pdfgen import canvas
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email.mime.text import MIMEText
@@ -13,18 +13,18 @@ from email.utils import formataddr
 from email import encoders
 
 # ── Inputs ────────────────────────────────────────────────────────────────────
-recipient     = os.environ['RECIPIENT']
-manager_name  = os.environ['MANAGER_NAME']
-system        = os.environ['SYSTEM']
-doc_login     = os.environ['DOC_LOGIN']
-doc_password  = os.environ['DOC_PASSWORD']
-sender_email  = os.environ['SENDER_EMAIL']
-sender_pass   = os.environ['SENDER_PASS']
+recipient    = os.environ['RECIPIENT']
+manager_name = os.environ['MANAGER_NAME']
+system       = os.environ['SYSTEM']
+doc_login    = os.environ['DOC_LOGIN']
+doc_password = os.environ['DOC_PASSWORD']
+sender_email = os.environ['SENDER_EMAIL']
+sender_pass  = os.environ['SENDER_PASS']
 
 DOCS = {
-    'axenta':  ('docs/axenta.docx',  'Памятка_Аксента'),
-    'glonass': ('docs/glonass.docx', 'Памятка_ГлонасСофт'),
-    'wialon':  ('docs/wialon.docx',  'Памятка_Wialon_Local'),
+    'axenta':  ('docs/axenta.pdf',  'Памятка_Аксента'),
+    'glonass': ('docs/glonass.pdf', 'Памятка_ГлонасСофт'),
+    'wialon':  ('docs/wialon.pdf',  'Памятка_Wialon_Local'),
 }
 SYSTEM_NAMES = {
     'axenta':  'АКСЕНТА',
@@ -32,105 +32,50 @@ SYSTEM_NAMES = {
     'wialon':  'WIALON LOCAL',
 }
 
-doc_path, doc_basename = DOCS[system]
+pdf_path, doc_basename = DOCS[system]
 system_name  = SYSTEM_NAMES[system]
 pdf_filename = f'Памятка_{system_name}_{doc_login}.pdf'
 
-# ── Patch document.xml ────────────────────────────────────────────────────────
-def escape_xml(s):
-    return s.replace('&','&amp;').replace('<','&lt;').replace('>','&gt;').replace('"','&quot;')
+# ── Overlay: erase USER/PASSWORD, draw new values ────────────────────────────
+pdfmetrics.registerFont(TTFont(
+    'ArialBold',
+    '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf'
+))
 
-with open(doc_path, 'rb') as f:
-    original = f.read()
+BG = (0.773, 0.851, 0.941)  # #C5D9F0 — cell background
 
-with zipfile.ZipFile(io.BytesIO(original)) as zin:
-    xml = zin.read('word/document.xml').decode('utf-8')
+def make_overlay(pw, ph, login, password):
+    buf = io.BytesIO()
+    c = canvas.Canvas(buf, pagesize=(pw, ph))
 
-# 1. Fix USER alignment and substitute value
-ct = '<w:jc w:val="center"/>'
-lt = '<w:jc w:val="left"/>'
+    # Erase old values with background color rects (exact cell inner bounds)
+    c.setFillColorRGB(*BG)
+    c.rect(191.9, 494.0, 381.7, 28.0, fill=1, stroke=0)  # USER row
+    c.rect(191.9, 454.5, 381.7, 29.5, fill=1, stroke=0)  # PASSWORD row
 
-ui = xml.index('>USER</w:t>')
-uj = xml.rindex(ct, 0, ui)
-xml = xml[:uj] + lt + xml[uj+len(ct):]
-xml = xml.replace('>USER</w:t>', f'>{escape_xml(doc_login)}</w:t>', 1)
+    # Draw new values
+    c.setFillColorRGB(0, 0, 0)
+    c.setFont('ArialBold', 18)
+    c.drawString(364.7, 498.4, login)
+    c.drawString(340.5, 458.8, password)
 
-pi = xml.index('>PASSWORD</w:t>')
-pj = xml.rindex(ct, 0, pi)
-xml = xml[:pj] + lt + xml[pj+len(ct):]
-xml = xml.replace('>PASSWORD</w:t>', f'>{escape_xml(doc_password)}</w:t>', 1)
+    c.save()
+    buf.seek(0)
+    return buf
 
-# 2. Fix creds table width: auto -> fixed (11088 dxa = 3393 + 7695)
-#    LibreOffice mishandles tblW="0" type="auto" — fix to pct 100% instead
-#    Find the specific table containing our creds (the one with the patched login)
-login_idx = xml.index(f'>{escape_xml(doc_login)}</w:t>')
-tbl_start = xml.rindex('<w:tbl>', 0, login_idx)
-tbl_end   = xml.index('</w:tbl>', login_idx) + len('</w:tbl>')
+reader = PdfReader(pdf_path)
+writer = PdfWriter()
+page   = reader.pages[0]
+pw, ph = float(page.mediabox.width), float(page.mediabox.height)
 
-table_xml = xml[tbl_start:tbl_end]
+overlay_pdf = PdfReader(make_overlay(pw, ph, doc_login, doc_password))
+page.merge_page(overlay_pdf.pages[0])
+writer.add_page(page)
 
-# Fix tblW to fixed width
-table_xml = table_xml.replace(
-    '<w:tblW w:w="0" w:type="auto"/>',
-    '<w:tblW w:w="11088" w:type="dxa"/>'
-)
-
-# Remove negative character spacing only inside this table
-# (keeps document-level spacing untouched)
-table_xml = re.sub(r'<w:spacing w:val="-\d+"/>', '', table_xml)
-
-# Also fix tblLayout to fixed so LibreOffice respects cell widths
-if '<w:tblLayout' not in table_xml:
-    table_xml = table_xml.replace(
-        '</w:tblPr>',
-        '<w:tblLayout w:type="fixed"/></w:tblPr>'
-    )
-else:
-    table_xml = re.sub(
-        r'<w:tblLayout[^/]*/>', 
-        '<w:tblLayout w:type="fixed"/>', 
-        table_xml
-    )
-
-xml = xml[:tbl_start] + table_xml + xml[tbl_end:]
-
-# ── Repack docx ───────────────────────────────────────────────────────────────
-buf = io.BytesIO()
-with zipfile.ZipFile(io.BytesIO(original)) as zin:
-    with zipfile.ZipFile(buf, 'w') as zout:
-        for item in zin.infolist():
-            if item.filename.endswith('/'):
-                continue
-            data = xml.encode('utf-8') if item.filename == 'word/document.xml' else zin.read(item.filename)
-            info = zipfile.ZipInfo(item.filename)
-            info.date_time     = item.date_time
-            info.compress_type = item.compress_type
-            zout.writestr(info, data)
-
-docx_bytes = buf.getvalue()
-
-# ── Convert docx → PDF via LibreOffice ───────────────────────────────────────
-with tempfile.TemporaryDirectory() as tmpdir:
-    docx_path = os.path.join(tmpdir, doc_basename + '.docx')
-    pdf_path  = os.path.join(tmpdir, doc_basename + '.pdf')
-
-    with open(docx_path, 'wb') as f:
-        f.write(docx_bytes)
-
-    r = subprocess.run(
-        ['libreoffice', '--headless', '--convert-to', 'pdf',
-         '--outdir', tmpdir, docx_path],
-        capture_output=True, text=True, timeout=60
-    )
-    print(r.stdout)
-    if r.returncode != 0:
-        print(r.stderr)
-        raise RuntimeError('LibreOffice conversion failed')
-
-    with open(pdf_path, 'rb') as f:
-        pdf_bytes = f.read()
-
-print(f'PDF: {len(pdf_bytes)} bytes')
+pdf_buf = io.BytesIO()
+writer.write(pdf_buf)
+pdf_bytes = pdf_buf.getvalue()
+print(f'PDF ready: {len(pdf_bytes)} bytes')
 
 # ── Compose & send email ──────────────────────────────────────────────────────
 msg = MIMEMultipart()
