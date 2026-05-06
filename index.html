@@ -13,16 +13,13 @@ body { font-family: 'Golos Text', sans-serif; background: #fff; min-height: 100v
 .site-footer { display: flex; justify-content: flex-end; }
 .site-footer img { width: 1024px; max-width: 100%; display: block; }
 .main { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 40px 32px 48px; gap: 24px; }
-
 .panel-title { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1.4px; margin-bottom: 16px; }
 .form-block { width: 100%; max-width: 480px; display: flex; flex-direction: column; }
 .field-label { font-size: 11px; font-weight: 700; color: var(--text); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 5px; }
 .field-input { width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 7px; font-family: inherit; font-size: 15px; color: var(--text); outline: none; transition: border-color .18s, box-shadow .18s; background: #fafcff; margin-bottom: 16px; }
 .field-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(26,86,160,.10); background: #fff; }
 .field-input::placeholder { color: #b0bfcc; }
-
 .divider { height: 1px; background: var(--border); width: 100%; max-width: 480px; }
-
 .section-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 12px; }
 .system-btns { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 480px; }
 .radio-btn { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 16px; border-radius: 8px; border: 2px solid #e0e6ee; background: #f6f8fa; cursor: pointer; transition: all .18s; user-select: none; }
@@ -34,13 +31,9 @@ body { font-family: 'Golos Text', sans-serif; background: #fff; min-height: 100v
 .radio-btn.checked .radio-circle { border-color: var(--blue); background: var(--blue); }
 .radio-btn.checked .radio-circle::after { opacity: 1; }
 .radio-btn.checked .btn-label { color: var(--text); }
-
 .status-msg { font-size: 12px; color: #e74c3c; min-height: 16px; text-align: center; }
-
-/* Action buttons */
 .actions { width: 100%; max-width: 480px; display: none; flex-direction: column; gap: 12px; }
 .actions.visible { display: flex; }
-
 .btn { width: 100%; padding: 13px; border: none; border-radius: 9px; font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer; letter-spacing: .4px; transition: background .18s, transform .1s; }
 .btn:active { transform: scale(.98); }
 .btn:disabled { opacity: .55; cursor: not-allowed; transform: none; }
@@ -48,16 +41,22 @@ body { font-family: 'Golos Text', sans-serif; background: #fff; min-height: 100v
 .btn-download:hover:not(:disabled) { background: #178a46; }
 .btn-email { background: var(--blue); color: #fff; box-shadow: 0 4px 16px rgba(26,86,160,.20); }
 .btn-email:hover:not(:disabled) { background: #154988; }
-
-/* Email panel */
-.email-panel { width: 100%; max-width: 480px; background: #f4f7fb; border: 1.5px solid var(--border); border-radius: 10px; padding: 20px; display: none; flex-direction: column; gap: 0; }
+.email-panel { width: 100%; max-width: 480px; background: #f4f7fb; border: 1.5px solid var(--border); border-radius: 10px; padding: 20px; display: none; flex-direction: column; }
 .email-panel.visible { display: flex; }
 .email-panel .panel-title { margin-bottom: 14px; }
-
-.select-input { width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 7px; font-family: inherit; font-size: 14px; color: var(--text); outline: none; background: #fff; transition: border-color .18s; margin-bottom: 14px; cursor: pointer; }
-.select-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(26,86,160,.10); }
-
-.email-status { font-size: 12px; min-height: 16px; text-align: center; margin-top: 4px; }
+.manager-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 4px; }
+.manager-btn { display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px 14px; border-radius: 8px; border: 2px solid #e0e6ee; background: #fff; cursor: pointer; transition: all .18s; user-select: none; }
+.manager-btn .radio-circle { width: 16px; height: 16px; border: 2px solid #c0ccd8; border-radius: 50%; background: #fff; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: border-color .18s, background .18s; }
+.manager-btn .radio-circle::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #fff; opacity: 0; transition: opacity .18s; }
+.manager-btn .manager-info { display: flex; flex-direction: column; gap: 1px; }
+.manager-btn .manager-name { font-size: 13px; font-weight: 700; color: #b0bec5; transition: color .18s; }
+.manager-btn .manager-email { font-size: 11px; color: #c0ccd8; transition: color .18s; }
+.manager-btn.checked { border-color: var(--blue); box-shadow: 0 2px 10px rgba(26,86,160,.12); }
+.manager-btn.checked .radio-circle { border-color: var(--blue); background: var(--blue); }
+.manager-btn.checked .radio-circle::after { opacity: 1; }
+.manager-btn.checked .manager-name { color: var(--text); }
+.manager-btn.checked .manager-email { color: var(--muted); }
+.email-status { font-size: 12px; min-height: 16px; text-align: center; margin-top: 8px; }
 .email-status.error { color: #e74c3c; }
 .email-status.ok { color: var(--green); }
 </style>
@@ -100,52 +99,66 @@ body { font-family: 'Golos Text', sans-serif; background: #fff; min-height: 100v
 
   <div class="status-msg" id="statusMsg"></div>
 
-  <!-- Кнопки действий — появляются когда всё заполнено -->
   <div class="actions" id="actions">
     <button class="btn btn-download" id="btnDownload" onclick="downloadDoc()">Скачать документ</button>
-    <button class="btn btn-email" onclick="toggleEmailPanel()">Отправить на почту клиенту</button>
+    <button class="btn btn-email" onclick="toggleEmailPanel()">Отправить менеджеру</button>
   </div>
 
-  <!-- Панель отправки письма -->
   <div class="email-panel" id="emailPanel">
-    <div class="panel-title">Отправка документа</div>
-
-    <div class="field-label">Менеджер (отправитель)</div>
-    <select class="select-input" id="managerSelect">
-      <option value="">— Выберите менеджера —</option>
-      <option value="manager1">Менеджер 1</option>
-      <option value="manager2">Менеджер 2</option>
-      <option value="manager3">Менеджер 3</option>
-      <option value="manager4">Менеджер 4</option>
-      <option value="manager5">Менеджер 5</option>
-    </select>
-
-    <div class="field-label">Email получателя</div>
-    <input class="field-input" id="recipientField" type="email" placeholder="client@example.com" style="margin-bottom:4px;">
-
+    <div class="panel-title">Выберите менеджера</div>
+    <div class="manager-list" id="managerList"></div>
     <div class="email-status" id="emailStatus"></div>
-
-    <button class="btn btn-email" id="btnSend" onclick="sendEmail()" style="margin-top:12px;">Отправить</button>
+    <button class="btn btn-email" id="btnSend" onclick="sendEmail()" style="margin-top:14px;">Отправить PDF</button>
   </div>
-
 </div>
 
 <div class="site-footer"><img src="footer.jpg" alt="АвтоСкан"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
+const MANAGERS = [
+  { name: 'Матвиенко Кирилл',   email: 'zvv@navi42.ru' },
+  { name: 'Лазуркевич Арина',   email: 'zvv@navi42.ru' },
+  { name: 'Штанов Андрей',      email: 'zvv@navi42.ru' },
+  { name: 'Осинцев Евгений',    email: 'zvv@navi42.ru' },
+  { name: 'Пушкарева Юлия',     email: 'zvv@navi42.ru' },
+];
+
 const DOCS = {
   axenta:  { path: 'docs/axenta.docx',  filename: 'Памятка_Аксента.docx' },
   glonass: { path: 'docs/glonass.docx', filename: 'Памятка_ГлонасСофт.docx' },
   wialon:  { path: 'docs/wialon.docx',  filename: 'Памятка_Wialon_Local.docx' },
 };
 
-// ── Замени на свой fine-grained PAT (только Actions: Write на этот репо) ──
-const GH_TOKEN = 'YOUR_FINE_GRAINED_PAT_HERE';
-const GH_REPO  = 'KeeGooRoomiE/autoscan-shiny-octo-invention';
+const GH_TOKEN    = 'YOUR_FINE_GRAINED_PAT_HERE';
+const GH_REPO     = 'KeeGooRoomiE/autoscan-shiny-octo-invention';
 const GH_WORKFLOW = 'send-email.yml';
 
-let currentSystem = null;
+let currentSystem  = null;
+let currentManager = null;
+
+// ── Build manager list ────────────────────────────────────────────────────────
+const list = document.getElementById('managerList');
+MANAGERS.forEach((m, i) => {
+  const btn = document.createElement('div');
+  btn.className = 'manager-btn';
+  btn.id = 'mb-' + i;
+  btn.innerHTML = `
+    <span class="radio-circle"></span>
+    <span class="manager-info">
+      <span class="manager-name">${m.name}</span>
+      <span class="manager-email">${m.email}</span>
+    </span>`;
+  btn.onclick = () => selectManager(i);
+  list.appendChild(btn);
+});
+
+function selectManager(i) {
+  currentManager = i;
+  document.querySelectorAll('.manager-btn').forEach(b => b.classList.remove('checked'));
+  document.getElementById('mb-' + i).classList.add('checked');
+  document.getElementById('emailStatus').textContent = '';
+}
 
 function selectSystem(key) {
   currentSystem = key;
@@ -155,7 +168,7 @@ function selectSystem(key) {
 }
 
 function escapeXml(s) {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 function update() {
@@ -169,52 +182,39 @@ function update() {
   }
   document.getElementById('statusMsg').textContent = msg;
   document.getElementById('actions').classList.toggle('visible', !!ok);
-  if (!ok) {
-    document.getElementById('emailPanel').classList.remove('visible');
-  }
+  if (!ok) document.getElementById('emailPanel').classList.remove('visible');
 }
 
 function toggleEmailPanel() {
   const panel = document.getElementById('emailPanel');
   panel.classList.toggle('visible');
-  if (panel.classList.contains('visible')) {
+  if (panel.classList.contains('visible'))
     panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }
 }
 
 async function patchDocx() {
   const user = document.getElementById('userField').value.trim();
   const pass = document.getElementById('passField').value.trim();
   const doc  = DOCS[currentSystem];
-
   const resp = await fetch(doc.path);
   if (!resp.ok) throw new Error('Не удалось загрузить: ' + doc.path);
-  const arrayBuf = await resp.arrayBuffer();
-
-  const zip = await JSZip.loadAsync(arrayBuf);
+  const zip = await JSZip.loadAsync(await resp.arrayBuffer());
   let xml = await zip.file('word/document.xml').async('string');
-
   const ct = '<w:jc w:val="center"/>';
   const lt = '<w:jc w:val="left"/>';
-
-  let uIdx = xml.indexOf('>USER</w:t>');
-  let uJc  = xml.lastIndexOf(ct, uIdx);
-  if (uJc !== -1) xml = xml.slice(0, uJc) + lt + xml.slice(uJc + ct.length);
+  let ui = xml.indexOf('>USER</w:t>'), uj = xml.lastIndexOf(ct, ui);
+  if (uj !== -1) xml = xml.slice(0,uj) + lt + xml.slice(uj+ct.length);
   xml = xml.replace(/>USER<\/w:t>/, '>' + escapeXml(user) + '<\/w:t>');
-
-  let pIdx = xml.indexOf('>PASSWORD</w:t>');
-  let pJc  = xml.lastIndexOf(ct, pIdx);
-  if (pJc !== -1) xml = xml.slice(0, pJc) + lt + xml.slice(pJc + ct.length);
+  let pi = xml.indexOf('>PASSWORD</w:t>'), pj = xml.lastIndexOf(ct, pi);
+  if (pj !== -1) xml = xml.slice(0,pj) + lt + xml.slice(pj+ct.length);
   xml = xml.replace(/>PASSWORD<\/w:t>/, '>' + escapeXml(pass) + '<\/w:t>');
-
   zip.file('word/document.xml', xml);
   return { zip, filename: doc.filename };
 }
 
 async function downloadDoc() {
   const btn = document.getElementById('btnDownload');
-  btn.textContent = 'Формирую...';
-  btn.disabled = true;
+  btn.textContent = 'Формирую...'; btn.disabled = true;
   try {
     const { zip, filename } = await patchDocx();
     const blob = await zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
@@ -226,26 +226,18 @@ async function downloadDoc() {
     setTimeout(() => { btn.textContent = 'Скачать документ'; btn.disabled = false; }, 2000);
   } catch(e) {
     alert('Ошибка: ' + e.message);
-    btn.textContent = 'Скачать документ';
-    btn.disabled = false;
+    btn.textContent = 'Скачать документ'; btn.disabled = false;
   }
 }
 
 async function sendEmail() {
-  const manager   = document.getElementById('managerSelect').value;
-  const recipient = document.getElementById('recipientField').value.trim();
-  const user      = document.getElementById('userField').value.trim();
-  const pass      = document.getElementById('passField').value.trim();
-  const statusEl  = document.getElementById('emailStatus');
-  const btn       = document.getElementById('btnSend');
-
-  if (!manager) { setEmailStatus('Выберите менеджера', 'error'); return; }
-  if (!recipient || !recipient.includes('@')) { setEmailStatus('Введите корректный email получателя', 'error'); return; }
-
-  btn.textContent = 'Отправляю...';
-  btn.disabled = true;
+  if (currentManager === null) { setEmailStatus('Выберите менеджера', 'error'); return; }
+  const user = document.getElementById('userField').value.trim();
+  const pass = document.getElementById('passField').value.trim();
+  const manager = MANAGERS[currentManager];
+  const btn = document.getElementById('btnSend');
+  btn.textContent = 'Отправляю...'; btn.disabled = true;
   setEmailStatus('', '');
-
   try {
     const resp = await fetch(
       `https://api.github.com/repos/${GH_REPO}/actions/workflows/${GH_WORKFLOW}/dispatches`,
@@ -259,30 +251,27 @@ async function sendEmail() {
         body: JSON.stringify({
           ref: 'main',
           inputs: {
-            recipient: recipient,
-            manager:   manager,
-            system:    currentSystem,
-            login:     user,
-            password:  pass,
+            recipient:    manager.email,
+            manager_name: manager.name,
+            system:       currentSystem,
+            login:        user,
+            password:     pass,
           }
         })
       }
     );
-
     if (resp.status === 204) {
-      setEmailStatus('Письмо отправлено ✓', 'ok');
-      document.getElementById('recipientField').value = '';
-      document.getElementById('managerSelect').value  = '';
+      setEmailStatus(`Отправлено → ${manager.name} (${manager.email}) ✓`, 'ok');
+      currentManager = null;
+      document.querySelectorAll('.manager-btn').forEach(b => b.classList.remove('checked'));
     } else {
       const err = await resp.json().catch(() => ({}));
-      setEmailStatus('Ошибка GitHub API: ' + (err.message || resp.status), 'error');
+      setEmailStatus('Ошибка: ' + (err.message || resp.status), 'error');
     }
   } catch(e) {
     setEmailStatus('Ошибка сети: ' + e.message, 'error');
   }
-
-  btn.textContent = 'Отправить';
-  btn.disabled = false;
+  btn.textContent = 'Отправить PDF'; btn.disabled = false;
 }
 
 function setEmailStatus(msg, type) {

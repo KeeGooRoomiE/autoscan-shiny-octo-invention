@@ -4,10 +4,10 @@ on:
   workflow_dispatch:
     inputs:
       recipient:
-        description: 'Email получателя'
+        description: 'Email получателя (менеджера)'
         required: true
-      manager:
-        description: 'Ключ менеджера (manager1..manager5)'
+      manager_name:
+        description: 'Имя менеджера'
         required: true
       system:
         description: 'Система (axenta / glonass / wialon)'
@@ -27,40 +27,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install LibreOffice
+        run: sudo apt-get install -y libreoffice --no-install-recommends
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      - name: Install dependencies
-        run: pip install python-docx
-
-      - name: Build and send docx
+      - name: Build and send PDF
         env:
-          RECIPIENT:      ${{ github.event.inputs.recipient }}
-          MANAGER_KEY:    ${{ github.event.inputs.manager }}
-          SYSTEM:         ${{ github.event.inputs.system }}
-          DOC_LOGIN:      ${{ github.event.inputs.login }}
-          DOC_PASSWORD:   ${{ github.event.inputs.password }}
-
-          MANAGER1_NAME:  ${{ secrets.MANAGER1_NAME }}
-          MANAGER1_EMAIL: ${{ secrets.MANAGER1_EMAIL }}
-          MANAGER1_PASS:  ${{ secrets.MANAGER1_PASS }}
-
-          MANAGER2_NAME:  ${{ secrets.MANAGER2_NAME }}
-          MANAGER2_EMAIL: ${{ secrets.MANAGER2_EMAIL }}
-          MANAGER2_PASS:  ${{ secrets.MANAGER2_PASS }}
-
-          MANAGER3_NAME:  ${{ secrets.MANAGER3_NAME }}
-          MANAGER3_EMAIL: ${{ secrets.MANAGER3_EMAIL }}
-          MANAGER3_PASS:  ${{ secrets.MANAGER3_PASS }}
-
-          MANAGER4_NAME:  ${{ secrets.MANAGER4_NAME }}
-          MANAGER4_EMAIL: ${{ secrets.MANAGER4_EMAIL }}
-          MANAGER4_PASS:  ${{ secrets.MANAGER4_PASS }}
-
-          MANAGER5_NAME:  ${{ secrets.MANAGER5_NAME }}
-          MANAGER5_EMAIL: ${{ secrets.MANAGER5_EMAIL }}
-          MANAGER5_PASS:  ${{ secrets.MANAGER5_PASS }}
-
+          RECIPIENT:     ${{ github.event.inputs.recipient }}
+          MANAGER_NAME:  ${{ github.event.inputs.manager_name }}
+          SYSTEM:        ${{ github.event.inputs.system }}
+          DOC_LOGIN:     ${{ github.event.inputs.login }}
+          DOC_PASSWORD:  ${{ github.event.inputs.password }}
+          SENDER_EMAIL:  ${{ secrets.MANAGER1_EMAIL }}
+          SENDER_PASS:   ${{ secrets.MANAGER1_PASS }}
         run: python send_email.py
