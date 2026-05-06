@@ -33,8 +33,8 @@ SYSTEM_NAMES = {
 }
 
 doc_path, doc_basename = DOCS[system]
-system_name = SYSTEM_NAMES[system]
-pdf_filename = doc_basename + '.pdf'
+system_name  = SYSTEM_NAMES[system]
+pdf_filename = f'Памятка_{system_name}_{doc_login}.pdf'
 
 # ── Patch document.xml ────────────────────────────────────────────────────────
 def escape_xml(s):
@@ -102,16 +102,12 @@ msg['From']    = formataddr((str(Header('АвтоСкан', 'utf-8')), sender_em
 msg['To']      = formataddr((str(Header(manager_name, 'utf-8')), recipient))
 msg['Subject'] = Header(f'Памятка пользователя — {system_name}', 'utf-8')
 
-body = f"""Здравствуйте, {manager_name}!
-
-Во вложении — памятка пользователя системы мониторинга {system_name}.
+body = f"""
 
 Данные для входа:
   Логин:  {doc_login}
   Пароль: {doc_password}
 
-С уважением,
-АвтоСкан — Системы контроля транспорта
 """
 msg.attach(MIMEText(body, 'plain', 'utf-8'))
 
