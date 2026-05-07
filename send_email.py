@@ -21,147 +21,169 @@ doc_password = os.environ['DOC_PASSWORD']
 sender_email = os.environ['SENDER_EMAIL']
 sender_pass  = os.environ['SENDER_PASS']
 
-DOCS = {
-    'axenta':  ('docs/axenta.pdf',  'Памятка_Аксента'),
-    'glonass': ('docs/glonass.pdf', 'Памятка_ГлонасСофт'),
-    'wialon':  ('docs/wialon.pdf',  'Памятка_Wialon_Local'),
-}
 SYSTEM_NAMES = {
-    'axenta':  'АКСЕНТА',
-    'glonass': 'ГЛОНАСССОФТ',
-    'wialon':  'WIALON LOCAL',
+    'axenta':  'AXENTA',
+    'glonass': 'GlonassSoft',
+    'wialon':  'Wialon Local',
+}
+system_name = SYSTEM_NAMES[system]
+
+# ── Email subject ─────────────────────────────────────────────────────────────
+subject = f'{doc_login} {system_name}'
+
+# ── Email HTML body ───────────────────────────────────────────────────────────
+CONTENT = {
+    'wialon': {
+        'title': 'Вход в Wialon Local',
+        'site':  'w.avtoscan42.ru',
+        'site_url': 'https://w.avtoscan42.ru',
+        'app_name': 'Wialon Local',
+        'app_links': [
+            ('Google Play', 'https://play.google.com/store/apps/details?id=com.wialon.local'),
+            ('App Store',   'https://apps.apple.com/app/wialon-local/id1471821246'),
+        ],
+        'app_alt_url':  'https://wialon-service.ru/mobilnoe-prilozhenie-wialon',
+        'server_note': '<p style="margin:6px 0 0 20px;color:#555;font-size:14px;">В настройках приложения укажите адрес сервера: <a href="https://w.avtoscan42.ru" style="color:#1a56a0;">w.avtoscan42.ru</a></p>',
+    },
+    'axenta': {
+        'title': 'Вход в AXENTA',
+        'site':  'axenta.cloud',
+        'site_url': 'https://axenta.cloud',
+        'app_name': 'AXENTA',
+        'app_links': [
+            ('Google Play', 'https://play.google.com/store/apps/details?id=tech.axenta.mobile'),
+            ('App Store',   'https://apps.apple.com/app/axenta/id6450080585'),
+            ('RuStore',     'https://rustore.ru/catalog/app/tech.axenta.mobile'),
+        ],
+        'app_alt_url': 'https://axenta.tech/mobile-app/',
+        'server_note': '',
+    },
+    'glonass': {
+        'title': 'Вход в GlonassSoft',
+        'site':  'hosting.glonasssoft.ru',
+        'site_url': 'https://hosting.glonasssoft.ru',
+        'app_name': 'GlonassSoft',
+        'app_links': [
+            ('Google Play', 'https://play.google.com/store/apps/details?id=ru.glonasssoft.monitoring'),
+            ('App Store',   'https://apps.apple.com/app/glonasssoft/id1234567890'),
+            ('RuStore',     'https://rustore.ru/catalog/app/ru.glonasssoft.monitoring'),
+        ],
+        'app_alt_url': 'https://glonasssoft.ru/ru/sistema-monitoringa/mobile-monitoring',
+        'server_note': '',
+    },
 }
 
-pdf_path, doc_basename = DOCS[system]
-system_name  = SYSTEM_NAMES[system]
-pdf_filename = f'Памятка_{system_name}_{doc_login}.pdf'
+c = CONTENT[system]
 
-# ── Fonts ─────────────────────────────────────────────────────────────────────
-pdfmetrics.registerFont(TTFont(
-    'ArialBold',
-    '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf'
-))
+store_links = ''.join(
+    f'<a href="{url}" style="display:inline-block;margin:4px 6px 4px 0;padding:6px 14px;'
+    f'background:#1a56a0;color:#fff;text-decoration:none;border-radius:5px;font-size:13px;font-weight:600;">'
+    f'{name}</a>'
+    for name, url in c['app_links']
+)
 
-def fit_size(text, max_w, sizes):
-    for sz in sizes:
-        if pdfmetrics.stringWidth(text, 'ArialBold', sz) <= max_w:
-            return sz
-    return sizes[-1]
+html = f"""<!DOCTYPE html>
+<html lang="ru">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f0f4f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f4f8;padding:32px 16px;">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.10);">
 
-# ── Overlay: Аксента (новый макет) ───────────────────────────────────────────
-# Two side-by-side rounded boxes
-# USER box: x=64  y=392 w=234.72 h=42  text x=78
-# PASS box: x=312.72 y=392 w=234.72 h=42  text x=326.72
-# Corner radius ~4.5pt → inset 6pt to avoid clipping
-# BG: rgb(239,246,254)  Text: rgb(0.043,0.180,0.369)
+  <!-- Header -->
+  <tr><td style="background:#1a56a0;padding:28px 36px;">
+    <div style="color:#fff;font-size:22px;font-weight:700;margin-bottom:4px;">{c['title']}</div>
+    <div style="color:#a8c4e8;font-size:14px;">Данные для входа в систему мониторинга</div>
+  </td></tr>
 
-def make_overlay_axenta(pw, ph, login, password):
-    BG   = (239/255, 246/255, 254/255)
-    FG   = (0.043, 0.180, 0.369)
-    INSET = 6.0
-    PAD_R = 10.0
+  <!-- Body -->
+  <tr><td style="padding:32px 36px;">
 
-    USER_X = 64.0;    USER_W = 234.72; TXT_USER_X = 78.0
-    PASS_X = 312.72;  PASS_W = 234.72; TXT_PASS_X = 326.72
-    CELL_Y = 392.0;   CELL_H = 42.0
+    <!-- Section: Computer -->
+    <div style="font-size:16px;font-weight:700;color:#1a2a4a;margin-bottom:12px;">
+      🖥 Через компьютер
+    </div>
+    <ol style="margin:0 0 24px 0;padding-left:20px;color:#333;font-size:15px;line-height:1.8;">
+      <li>Перейдите на сайт <a href="{c['site_url']}" style="color:#1a56a0;font-weight:600;">{c['site']}</a></li>
+      <li>Введите имя пользователя и пароль</li>
+    </ol>
 
-    buf = io.BytesIO()
-    c = canvas.Canvas(buf, pagesize=(pw, ph))
+    <!-- Credentials block -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+    <tr>
+      <td style="background:#eef4fb;border:1.5px solid #c5d9f0;border-radius:8px;padding:20px 24px;">
+        <table width="100%" cellpadding="0" cellspacing="0">
+          <tr>
+            <td width="50%" style="padding-right:16px;">
+              <div style="font-size:11px;font-weight:700;color:#6b7f9a;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Имя пользователя</div>
+              <div style="font-size:22px;font-weight:700;color:#0f3870;letter-spacing:0.5px;word-break:break-all;">{doc_login}</div>
+            </td>
+            <td width="1" style="background:#c5d9f0;width:1px;">&nbsp;</td>
+            <td width="50%" style="padding-left:16px;">
+              <div style="font-size:11px;font-weight:700;color:#6b7f9a;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Пароль</div>
+              <div style="font-size:22px;font-weight:700;color:#0f3870;letter-spacing:0.5px;word-break:break-all;">{doc_password}</div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    </table>
 
-    c.setFillColorRGB(*BG)
-    c.rect(USER_X + INSET, CELL_Y + INSET, USER_W - INSET*2, CELL_H - INSET*2, fill=1, stroke=0)
-    c.rect(PASS_X + INSET, CELL_Y + INSET, PASS_W - INSET*2, CELL_H - INSET*2, fill=1, stroke=0)
+    <!-- Section: Mobile -->
+    <div style="font-size:16px;font-weight:700;color:#1a2a4a;margin-bottom:12px;">
+      📱 Через смартфон
+    </div>
+    <ol style="margin:0 0 16px 0;padding-left:20px;color:#333;font-size:15px;line-height:1.8;">
+      <li style="margin-bottom:8px;">
+        Установите приложение <strong>«{c['app_name']}»</strong> — перейдите по ссылке и выберите версию для вашего устройства:<br>
+        <a href="{c['app_alt_url']}" style="color:#1a56a0;font-size:13px;">{c['app_alt_url']}</a><br>
+        <span style="color:#777;font-size:13px;">или найдите в:</span><br>
+        {store_links}
+      </li>
+      {f'<li style="margin-bottom:8px;">{c["server_note"][c["server_note"].find("В"):c["server_note"].rfind("</p>")]}</li>' if c['server_note'] else ''}
+      <li>Для входа используйте те же логин и пароль, что и для компьютерной версии</li>
+    </ol>
 
-    c.setFillColorRGB(*FG)
+  </td></tr>
 
-    sz = fit_size(login, USER_W - (TXT_USER_X - USER_X) - PAD_R, (16, 13, 10, 8))
-    c.setFont('ArialBold', sz)
-    c.drawString(TXT_USER_X, CELL_Y + CELL_H / 2 - sz * 0.3, login)
+  <!-- Footer -->
+  <tr><td style="background:#f4f7fb;border-top:1px solid #e0e8f0;padding:18px 36px;">
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td style="color:#6b7f9a;font-size:13px;">АвтоСкан — Системы контроля транспорта</td>
+        <td align="right" style="color:#6b7f9a;font-size:13px;">avtoscan42.ru</td>
+      </tr>
+    </table>
+  </td></tr>
 
-    sz = fit_size(password, PASS_W - (TXT_PASS_X - PASS_X) - PAD_R, (16, 13, 10, 8))
-    c.setFont('ArialBold', sz)
-    c.drawString(TXT_PASS_X, CELL_Y + CELL_H / 2 - sz * 0.3, password)
+</table>
+</td></tr>
+</table>
+</body>
+</html>"""
 
-    c.save()
-    buf.seek(0)
-    return buf
-
-# ── Overlay: Глонасс / Wialon (старый макет) ─────────────────────────────────
-# Single wide table, two rows
-# Right cell: x=190.9 y=485.7/444.8 w=383.7 h=37.7/40.3
-# BG: rgb(197,217,240)  Text: black
-
-def make_overlay_classic(pw, ph, login, password):
-    BG  = (0.773, 0.851, 0.941)  # #C5D9F0
-    FG  = (0, 0, 0)
-    CELL_LEFT  = 190.9
-    CELL_RIGHT = 574.6
-    TEXT_X     = CELL_LEFT + 8
-    MAX_W      = CELL_RIGHT - TEXT_X - 8
-
-    USER_CELL_Y = 494.0;  USER_CELL_H = 28.0
-    PASS_CELL_Y = 454.5;  PASS_CELL_H = 29.5
-
-    buf = io.BytesIO()
-    c = canvas.Canvas(buf, pagesize=(pw, ph))
-
-    c.setFillColorRGB(*BG)
-    c.rect(CELL_LEFT, USER_CELL_Y, CELL_RIGHT - CELL_LEFT, USER_CELL_H, fill=1, stroke=0)
-    c.rect(CELL_LEFT, PASS_CELL_Y, CELL_RIGHT - CELL_LEFT, PASS_CELL_H, fill=1, stroke=0)
-
-    c.setFillColorRGB(*FG)
-
-    sz = fit_size(login, MAX_W, (18, 14, 11, 9))
-    c.setFont('ArialBold', sz)
-    c.drawString(TEXT_X, USER_CELL_Y + USER_CELL_H / 2 - sz * 0.3, login)
-
-    sz = fit_size(password, MAX_W, (18, 14, 11, 9))
-    c.setFont('ArialBold', sz)
-    c.drawString(TEXT_X, PASS_CELL_Y + PASS_CELL_H / 2 - sz * 0.3, password)
-
-    c.save()
-    buf.seek(0)
-    return buf
-
-# ── Apply overlay ─────────────────────────────────────────────────────────────
-reader = PdfReader(pdf_path)
-writer = PdfWriter()
-page   = reader.pages[0]
-pw, ph = float(page.mediabox.width), float(page.mediabox.height)
-
-if system == 'axenta':
-    overlay_buf = make_overlay_axenta(pw, ph, doc_login, doc_password)
-else:
-    overlay_buf = make_overlay_classic(pw, ph, doc_login, doc_password)
-
-page.merge_page(PdfReader(overlay_buf).pages[0])
-writer.add_page(page)
-
-pdf_buf = io.BytesIO()
-writer.write(pdf_buf)
-pdf_bytes = pdf_buf.getvalue()
-print(f'PDF ready: {len(pdf_bytes)} bytes')
-
-# ── Compose & send email ──────────────────────────────────────────────────────
-msg = MIMEMultipart()
-msg['From']    = formataddr((str(Header('АвтоСкан', 'utf-8')), sender_email))
-msg['To']      = formataddr((str(Header(manager_name, 'utf-8')), recipient))
-msg['Subject'] = Header(f'Памятка пользователя — {system_name}', 'utf-8')
-
-body = f"""
+# ── Plain text fallback ───────────────────────────────────────────────────────
+plain = f"""{c['title']}
 
 Данные для входа:
-  Логин:  {doc_login}
-  Пароль: {doc_password}
+  Логин:    {doc_login}
+  Пароль:   {doc_password}
 
+Через компьютер:
+  {c['site_url']}
+
+Через смартфон:
+  {c['app_alt_url']}
 """
-msg.attach(MIMEText(body, 'plain', 'utf-8'))
 
-att = MIMEBase('application', 'pdf')
-att.set_payload(pdf_bytes)
-encoders.encode_base64(att)
-att.add_header('Content-Disposition', 'attachment', filename=('utf-8', '', pdf_filename))
-msg.attach(att)
+# ── Compose email ─────────────────────────────────────────────────────────────
+msg = MIMEMultipart('alternative')
+msg['From']    = formataddr((str(Header('АвтоСкан', 'utf-8')), sender_email))
+msg['To']      = formataddr((str(Header(manager_name, 'utf-8')), recipient))
+msg['Subject'] = Header(subject, 'utf-8')
+
+msg.attach(MIMEText(plain, 'plain', 'utf-8'))
+msg.attach(MIMEText(html,  'html',  'utf-8'))
 
 print(f'Sending to {recipient} ({manager_name}) from {sender_email} ...')
 with smtplib.SMTP_SSL('smtp.mail.ru', 465) as smtp:

@@ -32,15 +32,6 @@ body { font-family: 'Golos Text', sans-serif; background: #fff; min-height: 100v
 .radio-btn.checked .radio-circle::after { opacity: 1; }
 .radio-btn.checked .btn-label { color: var(--text); }
 .status-msg { font-size: 12px; color: #e74c3c; min-height: 16px; text-align: center; }
-.actions { width: 100%; max-width: 480px; display: none; flex-direction: column; gap: 12px; }
-.actions.visible { display: flex; }
-.btn { width: 100%; padding: 13px; border: none; border-radius: 9px; font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer; letter-spacing: .4px; transition: background .18s, transform .1s; }
-.btn:active { transform: scale(.98); }
-.btn:disabled { opacity: .55; cursor: not-allowed; transform: none; }
-.btn-download { background: var(--green); color: #fff; box-shadow: 0 4px 16px rgba(30,158,82,.22); }
-.btn-download:hover:not(:disabled) { background: #178a46; }
-.btn-email { background: var(--blue); color: #fff; box-shadow: 0 4px 16px rgba(26,86,160,.20); }
-.btn-email:hover:not(:disabled) { background: #154988; }
 .email-panel { width: 100%; max-width: 480px; background: #f4f7fb; border: 1.5px solid var(--border); border-radius: 10px; padding: 20px; display: none; flex-direction: column; }
 .email-panel.visible { display: flex; }
 .email-panel .panel-title { margin-bottom: 14px; }
@@ -59,6 +50,12 @@ body { font-family: 'Golos Text', sans-serif; background: #fff; min-height: 100v
 .email-status { font-size: 12px; min-height: 16px; text-align: center; margin-top: 8px; }
 .email-status.error { color: #e74c3c; }
 .email-status.ok { color: var(--green); }
+.btn { width: 100%; max-width: 480px; padding: 13px; border: none; border-radius: 9px; font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer; letter-spacing: .4px; transition: background .18s, transform .1s; display: none; }
+.btn:active { transform: scale(.98); }
+.btn:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+.btn.visible { display: block; }
+.btn-email { background: var(--blue); color: #fff; box-shadow: 0 4px 16px rgba(26,86,160,.20); }
+.btn-email:hover:not(:disabled) { background: #154988; }
 </style>
 </head>
 <body>
@@ -99,41 +96,29 @@ body { font-family: 'Golos Text', sans-serif; background: #fff; min-height: 100v
 
   <div class="status-msg" id="statusMsg"></div>
 
-  <div class="actions" id="actions">
-    <button class="btn btn-download" id="btnDownload" onclick="downloadDoc()">Скачать документ</button>
-    <button class="btn btn-email" onclick="toggleEmailPanel()">Отправить менеджеру</button>
-  </div>
+  <button class="btn btn-email" id="btnEmail" onclick="toggleEmailPanel()">Отправить менеджеру</button>
 
   <div class="email-panel" id="emailPanel">
     <div class="panel-title">Выберите менеджера</div>
     <div class="manager-list" id="managerList"></div>
     <div class="email-status" id="emailStatus"></div>
-    <button class="btn btn-email" id="btnSend" onclick="sendEmail()" style="margin-top:14px;">Отправить PDF</button>
+    <button class="btn btn-email" id="btnSend" onclick="sendEmail()" style="margin-top:14px;display:block;max-width:100%;">Отправить</button>
   </div>
 </div>
 
 <div class="site-footer"><img src="footer.jpg" alt="АвтоСкан"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
-  // Список менеджеров:
-  // name: 'Имя менеджера', email: 'email менеджера'
-
 const MANAGERS = [
-  { name: 'Матвиенко Кирилл',   email: 'kop5@navi42.ru' },
-  { name: 'Лазуркевич Арина',   email: 'kop1@navi42.ru' },
-  { name: 'Штанов Андрей',      email: 'kop2@navi42.ru' },
-  { name: 'Осинцев Евгений',    email: 'kop4@navi42.ru' },
-  { name: 'Пушкарева Юлия',     email: 'kop3@navi42.ru' },
-  { name: 'Петрушин Станислав',     email: 'pso@navi42.ru' },
-  { name: 'Баумштарк Марк',   email: 'service@navi42.ru' },
+  { name: 'Матвиенко Кирилл',     email: 'kop5@navi42.ru' },
+  { name: 'Лазуркевич Арина',     email: 'kop1@navi42.ru' },
+  { name: 'Штанов Андрей',        email: 'kop2@navi42.ru' },
+  { name: 'Осинцев Евгений',      email: 'kop4@navi42.ru' },
+  { name: 'Пушкарева Юлия',       email: 'kop3@navi42.ru' },
+  { name: 'Петрушин Станислав',   email: 'pso@navi42.ru' },
+  { name: 'Баумштарк Марк',       email: 'service@navi42.ru' },
+  { name: 'Гусаров Александр',   email: 'zvv@navi42.ru' },
 ];
-
-const DOCS = {
-  axenta:  { path: 'docs/axenta.docx',  filename: 'Памятка_Аксента.docx' },
-  glonass: { path: 'docs/glonass.docx', filename: 'Памятка_ГлонасСофт.docx' },
-  wialon:  { path: 'docs/wialon.docx',  filename: 'Памятка_Wialon_Local.docx' },
-};
 
 const GH_TOKEN    = 'YOUR_FINE_GRAINED_PAT_HERE';
 const GH_REPO     = 'KeeGooRoomiE/autoscan-shiny-octo-invention';
@@ -142,7 +127,7 @@ const GH_WORKFLOW = 'send-email.yml';
 let currentSystem  = null;
 let currentManager = null;
 
-// ── Build manager list ────────────────────────────────────────────────────────
+// Build manager list
 const list = document.getElementById('managerList');
 MANAGERS.forEach((m, i) => {
   const btn = document.createElement('div');
@@ -172,10 +157,6 @@ function selectSystem(key) {
   update();
 }
 
-function escapeXml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
 function update() {
   const user = document.getElementById('userField').value.trim();
   const pass = document.getElementById('passField').value.trim();
@@ -186,7 +167,7 @@ function update() {
     else if (!user || !pass) msg = 'Заполните оба поля';
   }
   document.getElementById('statusMsg').textContent = msg;
-  document.getElementById('actions').classList.toggle('visible', !!ok);
+  document.getElementById('btnEmail').classList.toggle('visible', !!ok);
   if (!ok) document.getElementById('emailPanel').classList.remove('visible');
 }
 
@@ -197,52 +178,16 @@ function toggleEmailPanel() {
     panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-async function patchDocx() {
-  const user = document.getElementById('userField').value.trim();
-  const pass = document.getElementById('passField').value.trim();
-  const doc  = DOCS[currentSystem];
-  const resp = await fetch(doc.path);
-  if (!resp.ok) throw new Error('Не удалось загрузить: ' + doc.path);
-  const zip = await JSZip.loadAsync(await resp.arrayBuffer());
-  let xml = await zip.file('word/document.xml').async('string');
-  const ct = '<w:jc w:val="center"/>';
-  const lt = '<w:jc w:val="left"/>';
-  let ui = xml.indexOf('>USER</w:t>'), uj = xml.lastIndexOf(ct, ui);
-  if (uj !== -1) xml = xml.slice(0,uj) + lt + xml.slice(uj+ct.length);
-  xml = xml.replace(/>USER<\/w:t>/, '>' + escapeXml(user) + '<\/w:t>');
-  let pi = xml.indexOf('>PASSWORD</w:t>'), pj = xml.lastIndexOf(ct, pi);
-  if (pj !== -1) xml = xml.slice(0,pj) + lt + xml.slice(pj+ct.length);
-  xml = xml.replace(/>PASSWORD<\/w:t>/, '>' + escapeXml(pass) + '<\/w:t>');
-  zip.file('word/document.xml', xml);
-  return { zip, filename: doc.filename };
-}
-
-async function downloadDoc() {
-  const btn = document.getElementById('btnDownload');
-  btn.textContent = 'Формирую...'; btn.disabled = true;
-  try {
-    const { zip, filename } = await patchDocx();
-    const blob = await zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = filename; a.click();
-    URL.revokeObjectURL(url);
-    btn.textContent = 'Готово ✓';
-    setTimeout(() => { btn.textContent = 'Скачать документ'; btn.disabled = false; }, 2000);
-  } catch(e) {
-    alert('Ошибка: ' + e.message);
-    btn.textContent = 'Скачать документ'; btn.disabled = false;
-  }
-}
-
 async function sendEmail() {
   if (currentManager === null) { setEmailStatus('Выберите менеджера', 'error'); return; }
-  const user = document.getElementById('userField').value.trim();
-  const pass = document.getElementById('passField').value.trim();
+  const user    = document.getElementById('userField').value.trim();
+  const pass    = document.getElementById('passField').value.trim();
   const manager = MANAGERS[currentManager];
-  const btn = document.getElementById('btnSend');
+  const btn     = document.getElementById('btnSend');
+
   btn.textContent = 'Отправляю...'; btn.disabled = true;
   setEmailStatus('', '');
+
   try {
     const resp = await fetch(
       `https://api.github.com/repos/${GH_REPO}/actions/workflows/${GH_WORKFLOW}/dispatches`,
@@ -266,7 +211,7 @@ async function sendEmail() {
       }
     );
     if (resp.status === 204) {
-      setEmailStatus(`Отправлено → ${manager.name} (${manager.email}) ✓`, 'ok');
+      setEmailStatus(`Отправлено → ${manager.name} ✓`, 'ok');
       currentManager = null;
       document.querySelectorAll('.manager-btn').forEach(b => b.classList.remove('checked'));
     } else {
@@ -276,7 +221,7 @@ async function sendEmail() {
   } catch(e) {
     setEmailStatus('Ошибка сети: ' + e.message, 'error');
   }
-  btn.textContent = 'Отправить PDF'; btn.disabled = false;
+  btn.textContent = 'Отправить'; btn.disabled = false;
 }
 
 function setEmailStatus(msg, type) {
