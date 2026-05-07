@@ -1,16 +1,9 @@
 import os
-import io
 import smtplib
-from pypdf import PdfReader, PdfWriter
-from reportlab.pdfgen import canvas
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
 from email.mime.multipart import MIMEMultipart
-from email.mime.base import MIMEBase
 from email.mime.text import MIMEText
 from email.header import Header
 from email.utils import formataddr
-from email import encoders
 
 # ── Inputs ────────────────────────────────────────────────────────────────────
 recipient    = os.environ['RECIPIENT']
@@ -27,11 +20,8 @@ SYSTEM_NAMES = {
     'wialon':  'Wialon Local',
 }
 system_name = SYSTEM_NAMES[system]
-
-# ── Email subject ─────────────────────────────────────────────────────────────
 subject = f'{doc_login} {system_name}'
 
-# ── Email HTML body ───────────────────────────────────────────────────────────
 CONTENT = {
     'wialon': {
         'title': 'Вход в Wialon Local',
@@ -42,8 +32,8 @@ CONTENT = {
             ('Google Play', 'https://play.google.com/store/apps/details?id=com.gurtam.wialon_local_1504&hl=ru'),
             ('App Store',   'https://apps.apple.com/ru/app/wialon-local/id1011136393'),
         ],
-        'app_alt_url':  'https://wialon-service.ru/mobilnoe-prilozhenie-wialon',
-        'server_note': '<p style="margin:6px 0 0 20px;color:#555;font-size:14px;">В настройках приложения укажите адрес сервера: <a href="https://w.avtoscan42.ru" style="color:#1a56a0;">w.avtoscan42.ru</a></p>',
+        'app_alt_url': 'https://wialon-service.ru/mobilnoe-prilozhenie-wialon',
+        'server_note': 'В настройках приложения укажите адрес сервера: w.avtoscan42.ru',
     },
     'axenta': {
         'title': 'Вход в AXENTA',
@@ -51,7 +41,7 @@ CONTENT = {
         'site_url': 'https://axenta.cloud',
         'app_name': 'AXENTA',
         'app_links': [
-            ('Google Play', 'https://play.google.com/store/apps/details?id=ru.nekta.axenta&hl=ru),
+            ('Google Play', 'https://play.google.com/store/apps/details?id=ru.nekta.axenta&hl=ru'),
             ('App Store',   'https://apps.apple.com/ru/app/axenta/id6474660071'),
             ('RuStore',     'https://www.rustore.ru/catalog/app/ru.nekta.axenta?rcvr=1730461258081'),
         ],
@@ -82,6 +72,11 @@ store_links = ''.join(
     for name, url in c['app_links']
 )
 
+server_note_li = (
+    f'<li style="margin-bottom:8px;">{c["server_note"]}</li>'
+    if c['server_note'] else ''
+)
+
 html = f"""<!DOCTYPE html>
 <html lang="ru">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -90,49 +85,38 @@ html = f"""<!DOCTYPE html>
 <tr><td align="center">
 <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.10);">
 
-  <!-- Header -->
   <tr><td style="background:#1a56a0;padding:28px 36px;">
     <div style="color:#fff;font-size:22px;font-weight:700;margin-bottom:4px;">{c['title']}</div>
     <div style="color:#a8c4e8;font-size:14px;">Данные для входа в систему мониторинга</div>
   </td></tr>
 
-  <!-- Body -->
   <tr><td style="padding:32px 36px;">
 
-    <!-- Section: Computer -->
-    <div style="font-size:16px;font-weight:700;color:#1a2a4a;margin-bottom:12px;">
-      🖥 Через компьютер
-    </div>
+    <div style="font-size:16px;font-weight:700;color:#1a2a4a;margin-bottom:12px;">🖥 Через компьютер</div>
     <ol style="margin:0 0 24px 0;padding-left:20px;color:#333;font-size:15px;line-height:1.8;">
       <li>Перейдите на сайт <a href="{c['site_url']}" style="color:#1a56a0;font-weight:600;">{c['site']}</a></li>
       <li>Введите имя пользователя и пароль</li>
     </ol>
 
-    <!-- Credentials block -->
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
-    <tr>
-      <td style="background:#eef4fb;border:1.5px solid #c5d9f0;border-radius:8px;padding:20px 24px;">
-        <table width="100%" cellpadding="0" cellspacing="0">
-          <tr>
-            <td width="50%" style="padding-right:16px;">
-              <div style="font-size:11px;font-weight:700;color:#6b7f9a;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Имя пользователя</div>
-              <div style="font-size:22px;font-weight:700;color:#0f3870;letter-spacing:0.5px;word-break:break-all;">{doc_login}</div>
-            </td>
-            <td width="1" style="background:#c5d9f0;width:1px;">&nbsp;</td>
-            <td width="50%" style="padding-left:16px;">
-              <div style="font-size:11px;font-weight:700;color:#6b7f9a;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Пароль</div>
-              <div style="font-size:22px;font-weight:700;color:#0f3870;letter-spacing:0.5px;word-break:break-all;">{doc_password}</div>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
+    <tr><td style="background:#eef4fb;border:1.5px solid #c5d9f0;border-radius:8px;padding:20px 24px;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td width="50%" style="padding-right:16px;">
+            <div style="font-size:11px;font-weight:700;color:#6b7f9a;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Имя пользователя</div>
+            <div style="font-size:22px;font-weight:700;color:#0f3870;letter-spacing:0.5px;word-break:break-all;">{doc_login}</div>
+          </td>
+          <td width="1" style="background:#c5d9f0;width:1px;">&nbsp;</td>
+          <td width="50%" style="padding-left:16px;">
+            <div style="font-size:11px;font-weight:700;color:#6b7f9a;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Пароль</div>
+            <div style="font-size:22px;font-weight:700;color:#0f3870;letter-spacing:0.5px;word-break:break-all;">{doc_password}</div>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
     </table>
 
-    <!-- Section: Mobile -->
-    <div style="font-size:16px;font-weight:700;color:#1a2a4a;margin-bottom:12px;">
-      📱 Через смартфон
-    </div>
+    <div style="font-size:16px;font-weight:700;color:#1a2a4a;margin-bottom:12px;">📱 Через смартфон</div>
     <ol style="margin:0 0 16px 0;padding-left:20px;color:#333;font-size:15px;line-height:1.8;">
       <li style="margin-bottom:8px;">
         Установите приложение <strong>«{c['app_name']}»</strong> — перейдите по ссылке и выберите версию для вашего устройства:<br>
@@ -140,13 +124,12 @@ html = f"""<!DOCTYPE html>
         <span style="color:#777;font-size:13px;">или найдите в:</span><br>
         {store_links}
       </li>
-      {f'<li style="margin-bottom:8px;">{c["server_note"][c["server_note"].find("В"):c["server_note"].rfind("</p>")]}</li>' if c['server_note'] else ''}
+      {server_note_li}
       <li>Для входа используйте те же логин и пароль, что и для компьютерной версии</li>
     </ol>
 
   </td></tr>
 
-  <!-- Footer -->
   <tr><td style="background:#f4f7fb;border-top:1px solid #e0e8f0;padding:18px 36px;">
     <table width="100%" cellpadding="0" cellspacing="0">
       <tr>
@@ -162,26 +145,20 @@ html = f"""<!DOCTYPE html>
 </body>
 </html>"""
 
-# ── Plain text fallback ───────────────────────────────────────────────────────
 plain = f"""{c['title']}
 
 Данные для входа:
-  Логин:    {doc_login}
-  Пароль:   {doc_password}
+  Логин:  {doc_login}
+  Пароль: {doc_password}
 
-Через компьютер:
-  {c['site_url']}
-
-Через смартфон:
-  {c['app_alt_url']}
+Через компьютер: {c['site_url']}
+Через смартфон:  {c['app_alt_url']}
 """
 
-# ── Compose email ─────────────────────────────────────────────────────────────
 msg = MIMEMultipart('alternative')
 msg['From']    = formataddr((str(Header('АвтоСкан', 'utf-8')), sender_email))
 msg['To']      = formataddr((str(Header(manager_name, 'utf-8')), recipient))
 msg['Subject'] = Header(subject, 'utf-8')
-
 msg.attach(MIMEText(plain, 'plain', 'utf-8'))
 msg.attach(MIMEText(html,  'html',  'utf-8'))
 
@@ -189,5 +166,4 @@ print(f'Sending to {recipient} ({manager_name}) from {sender_email} ...')
 with smtplib.SMTP_SSL('smtp.mail.ru', 465) as smtp:
     smtp.login(sender_email, sender_pass)
     smtp.sendmail(sender_email, recipient, msg.as_string().encode('utf-8'))
-
 print('Done.')

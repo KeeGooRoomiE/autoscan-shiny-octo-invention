@@ -32,10 +32,7 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install dependencies
-        run: pip install pypdf reportlab
-
-      - name: Send PDF
+      - name: Send email
         env:
           RECIPIENT:    ${{ github.event.inputs.recipient }}
           MANAGER_NAME: ${{ github.event.inputs.manager_name }}
