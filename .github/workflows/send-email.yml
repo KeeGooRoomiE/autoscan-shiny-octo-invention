@@ -32,6 +32,18 @@ jobs:
         with:
           python-version: '3.12'
 
+      # workflow_dispatch inputs are never masked by GitHub automatically —
+      # only values already registered as secrets are. login/password here
+      # are a client's real monitoring-system credentials, not a repo
+      # secret, so without this they print in plaintext in the "Send email"
+      # step's auto-logged env: block (and anywhere else they might be
+      # echoed). Registering them via ::add-mask:: here masks every
+      # occurrence for the rest of this job, including that env: dump.
+      - name: Mask client credentials
+        run: |
+          echo "::add-mask::${{ github.event.inputs.login }}"
+          echo "::add-mask::${{ github.event.inputs.password }}"
+
       - name: Send email
         env:
           RECIPIENT:    ${{ github.event.inputs.recipient }}
