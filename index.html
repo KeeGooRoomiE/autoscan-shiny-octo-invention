@@ -62,6 +62,12 @@ body { font-family: 'Golos Text', sans-serif; background: #fff; min-height: 100v
 
 <div class="site-header"><img src="header.jpg" alt="АвтоСкан"></div>
 
+<div style="background:#fff8e1;border-bottom:1px solid #f0dca0;padding:10px 16px;text-align:center;font-size:13px;color:#7a5c00;">
+  Перед первой отправкой откройте
+  <a href="https://95.190.201.194:26502/healthz" target="_blank" rel="noopener" style="color:#1a56a0;font-weight:600;">этот адрес</a>
+  в новой вкладке и подтвердите предупреждение браузера о сертификате — иначе отправка не сработает.
+</div>
+
 <div class="main">
   <div class="form-block">
     <div class="panel-title">Данные пользователя</div>
@@ -110,21 +116,23 @@ body { font-family: 'Golos Text', sans-serif; background: #fff; min-height: 100v
 
 <script>
 const MANAGERS = [
-  { name: 'Матвиенко Кирилл',     email: 'kop5@navi42.ru' },
-  { name: 'Лазуркевич Арина',     email: 'kop1@navi42.ru' },
-  { name: 'Штанов Андрей',        email: 'kop2@navi42.ru' },
-  { name: 'Осинцев Евгений',      email: 'kop4@navi42.ru' },
-  { name: 'Пушкарева Юлия',       email: 'kop3@navi42.ru' },
-  { name: 'Петрушин Станислав',   email: 'pso@navi42.ru' },
-  { name: 'Баумштарк Марк',       email: 'service@navi42.ru' },
-  { name: 'Мачульский Андрей',      email: 'mav@navi42.ru' },
-  { name: 'Мальцева Анастасия',     email: 'kao@navi42.ru' },
-  { name: 'Халепо Сергей',     email: 'hsv@navi42.ru' },
+  { key: 'kop5',    name: 'Матвиенко Кирилл',     email: 'kop5@navi42.ru' },
+  { key: 'kop1',    name: 'Лазуркевич Арина',     email: 'kop1@navi42.ru' },
+  { key: 'kop2',    name: 'Штанов Андрей',        email: 'kop2@navi42.ru' },
+  { key: 'kop4',    name: 'Осинцев Евгений',      email: 'kop4@navi42.ru' },
+  { key: 'kop3',    name: 'Пушкарева Юлия',       email: 'kop3@navi42.ru' },
+  { key: 'pso',     name: 'Петрушин Станислав',   email: 'pso@navi42.ru' },
+  { key: 'service', name: 'Баумштарк Марк',       email: 'service@navi42.ru' },
+  { key: 'mav',     name: 'Мачульский Андрей',      email: 'mav@navi42.ru' },
+  { key: 'kao',     name: 'Мальцева Анастасия',     email: 'kao@navi42.ru' },
+  { key: 'hsv',     name: 'Халепо Сергей',     email: 'hsv@navi42.ru' },
 ];
 
-const GH_TOKEN    = 'YOUR_FINE_GRAINED_PAT_HERE';
-const GH_REPO     = 'KeeGooRoomiE/autoscan-shiny-octo-invention';
-const GH_WORKFLOW = 'send-email.yml';
+// TODO: switch to https://base.avtoscan42.ru/api/pamyatka once Cloudflare Tunnel is live —
+// self-signed cert on the IP below means fetch() will silently network-fail for any visitor
+// who hasn't manually opened this exact https URL in their browser and accepted the warning.
+const PAMYATKA_URL   = 'https://95.190.201.194:26502/api/pamyatka';
+const PAMYATKA_TOKEN = 'YOUR_PAMYATKA_TOKEN_HERE';
 
 let currentSystem  = null;
 let currentManager = null;
@@ -191,37 +199,29 @@ async function sendEmail() {
   setEmailStatus('', '');
 
   try {
-    const resp = await fetch(
-      `https://api.github.com/repos/${GH_REPO}/actions/workflows/${GH_WORKFLOW}/dispatches`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${GH_TOKEN}`,
-          'Accept': 'application/vnd.github+json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ref: 'main',
-          inputs: {
-            recipient:    manager.email,
-            manager_name: manager.name,
-            system:       currentSystem,
-            login:        user,
-            password:     pass,
-          }
-        })
-      }
-    );
-    if (resp.status === 204) {
+    const resp = await fetch(PAMYATKA_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Pamyatka-Token': PAMYATKA_TOKEN,
+      },
+      body: JSON.stringify({
+        recipient_key: manager.key,
+        system:        currentSystem,
+        login:         user,
+        password:      pass,
+      })
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (resp.ok && data.ok) {
       setEmailStatus(`Отправлено → ${manager.name} ✓`, 'ok');
       currentManager = null;
       document.querySelectorAll('.manager-btn').forEach(b => b.classList.remove('checked'));
     } else {
-      const err = await resp.json().catch(() => ({}));
-      setEmailStatus('Ошибка: ' + (err.message || resp.status), 'error');
+      setEmailStatus('Ошибка: ' + (data.error || resp.status), 'error');
     }
   } catch(e) {
-    setEmailStatus('Ошибка сети: ' + e.message, 'error');
+    setEmailStatus('Ошибка сети — вероятно, не принят сертификат сервера. Откройте адрес из баннера вверху страницы в новой вкладке, подтвердите предупреждение и повторите отправку.', 'error');
   }
   btn.textContent = 'Отправить'; btn.disabled = false;
 }
